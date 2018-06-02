@@ -73,6 +73,7 @@ def baseline_model():
 	# create model
 	model = Sequential()
 	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
+	model.add(Dense(20, input_shape = [98], activation='relu'))
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mse', 'mae', 'mape'])
@@ -82,7 +83,7 @@ def try_NN2(X, Y):
 	seed = 7
 	np.random.seed(seed)
 	# evaluate model with standardized dataset
-	estimator = KerasRegressor(build_fn=baseline_model, epochs=1, batch_size=5, verbose=1)
+	#estimator = KerasRegressor(build_fn=baseline_model, epochs=1, batch_size=5, verbose=1)
 	kfold = KFold(n_splits=10, random_state=seed, shuffle=True)
 
 	mse_scores = []
@@ -98,13 +99,11 @@ def try_NN2(X, Y):
 		# # Fit the model
 		# model.fit(X[train], Y[train], epochs=150, batch_size=10, verbose=0)
 		
-
-
 		model = baseline_model()
 		now = time.strftime("%c")
 		tbCallBack = keras.callbacks.TensorBoard(log_dir='./logs/'+now, histogram_freq=0, write_graph=True, write_images=True)
-		history = model.fit(X[train], Y[train], epochs=3000, batch_size=len(X), verbose=0, callbacks=[tbCallBack])
-
+		history = model.fit(X[train], Y[train],  epochs=5000, batch_size=len(X), verbose=0, callbacks=[tbCallBack])
+		# TODO: maybe use validation_split=0.2,
 		# evaluate the model
 		scores = model.evaluate(X[test], Y[test], verbose=0)
 		print("%s: %.2f" % (model.metrics_names[1], scores[1]))
