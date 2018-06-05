@@ -119,7 +119,7 @@ def create_twitter_db(api, fips_codes, opioid_terms):
 	codes = []
 	after_num = False
 	for fips_code in fips_codes:
-		if int(fips_code) == 39165:
+		if int(fips_code) == 47125:
 			after_num = True
 		if after_num:
 			codes.append(fips_code)
@@ -137,12 +137,12 @@ def create_twitter_db(api, fips_codes, opioid_terms):
 			counts.append(county_tweet_count)
 			tweets.append(county_tweets)
 			df_result = pd.DataFrame(data={'FIPS': codes, 'total_count': counts, 'tweets': tweets})
-			df_result.to_csv('tweetsV2_6.csv', sep='\t', encoding='utf-8')
+			df_result.to_csv('tweetsV2_8.csv', sep='\t', encoding='utf-8')
 	# print len(fips_codes)
 	# print len(counts)
 	# print len(tweets)
 	df_result = pd.DataFrame(data={'FIPS': fips_codes, 'total_count': counts, 'tweets': tweets})
-	df_result.to_csv('tweetsV2_6.csv', sep='\t', encoding='utf-8')
+	df_result.to_csv('tweetsV2_8.csv', sep='\t', encoding='utf-8')
 	return df_result
 	
 

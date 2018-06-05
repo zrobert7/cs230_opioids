@@ -112,7 +112,28 @@ class TrainValTensorBoard(TensorBoard):
 
 
 #CITE: https://machinelearningmastery.com/regression-tutorial-keras-deep-learning-library-python/
-def baseline_model():
+
+def NN1_model(lr=0.001):
+	# create model
+	model = Sequential()
+	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
+	model.add(Dense(1, kernel_initializer='normal'))
+	# Compile model
+	adam = optimizers.Adam(lr=lr)#clipvalue=1000, clipnorm=1)
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
+	return model
+
+def NN1_clip_model(lr=0.001):
+	# create model
+	model = Sequential()
+	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
+	model.add(Dense(1, kernel_initializer='normal'))
+	# Compile model
+	adam = optimizers.Adam(clipvalue=1000, clipnorm=1)
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
+	return model
+
+def NN2_model(lr=0.001):
 	# create model
 	model = Sequential()
 	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
@@ -123,7 +144,42 @@ def baseline_model():
 	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
 	return model
 
-def try_NN2(X, Y):
+def NN2_clip_model(lr=0.001):
+	# create model
+	model = Sequential()
+	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
+	model.add(Dense(20, input_shape = [98], activation='relu'))
+	model.add(Dense(1, kernel_initializer='normal'))
+	# Compile model
+	adam = optimizers.Adam(clipvalue=1000, clipnorm=1)
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
+	return model
+
+def NN3_model(lr=0.001):
+	# create model
+	model = Sequential()
+	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
+	model.add(Dense(50, input_shape = [98], activation='relu'))
+	model.add(Dense(20, input_shape = [98], activation='relu'))
+	model.add(Dense(1, kernel_initializer='normal'))
+	# Compile model
+	adam = optimizers.Adam()#clipvalue=1000, clipnorm=1)
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
+	return model
+
+def NN3_clip_model(lr=0.001):
+	# create model
+	model = Sequential()
+	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
+	model.add(Dense(50, input_shape = [98], activation='relu'))
+	model.add(Dense(20, input_shape = [98], activation='relu'))
+	model.add(Dense(1, kernel_initializer='normal'))
+	# Compile model
+	adam = optimizers.Adam(clipvalue=1000, clipnorm=1)
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
+	return model
+
+def try_NN_kfold(X, Y, model_name=NN1_model, lr=0.001):
 	seed = 7
 	np.random.seed(seed)
 	# evaluate model with standardized dataset
@@ -143,10 +199,10 @@ def try_NN2(X, Y):
 		# # Fit the model
 		# model.fit(X[train], Y[train], epochs=150, batch_size=10, verbose=0)
 		
-		model = baseline_model()
+		model = model_name(lr)
 		now = time.strftime("%c")
 		tbCallBack = keras.callbacks.TensorBoard(log_dir='./logs/'+now, histogram_freq=0, write_graph=True, write_images=True)
-		history = model.fit(X[train], Y[train],  validation_split=0.15, epochs=7500, batch_size=len(X), verbose=0, callbacks=[TrainValTensorBoard(write_graph=False)])#[tbCallBack])
+		history = model.fit(X[train], Y[train],  validation_split=0.15, epochs=5000, batch_size=len(X), verbose=0, callbacks=[TrainValTensorBoard(write_graph=False)])#[tbCallBack])
 		# TODO: maybe use validation_split=0.2,
 		# evaluate the model
 		scores = model.evaluate(X[test], Y[test], verbose=0)
@@ -172,5 +228,15 @@ X_train, X_test, y_train, y_test = data_splitter(X_np, Y_np)
 #X_train = normalize(X_train) #is this helpful?
 y_train = np.reshape(y_train, (len(y_train), 1))
 
-#try_NN1(X_train, X_test, y_train, y_test)
-try_NN2(X_np, Y_np)
+# #try_NN1(X_train, X_test, y_train, y_test)
+# try_NN_kfold(X_np, Y_np, NN1_model)
+# try_NN_kfold(X_np, Y_np, NN2_model)
+# try_NN_kfold(X_np, Y_np, NN3_model)
+# try_NN_kfold(X_np, Y_np, NN1_clip_model)
+# try_NN_kfold(X_np, Y_np, NN2_clip_model)
+# try_NN_kfold(X_np, Y_np, NN3_clip_model)
+
+
+lrs = [0.1, 0.01, 0.001, 0.0001]
+for lr in lrs:
+	try_NN_kfold(X_np, Y_np, NN1_clip_model, lr)
