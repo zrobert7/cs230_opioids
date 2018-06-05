@@ -18,12 +18,6 @@ access_token = '4340540354-yDL10wiMNxkQd1ItyjEGC1VNyXSUSnYgGP4yezM'
 access_token_secret = 'BcCkFTI76WReL33HIHfhqj03jKihrcH3Pk7DlaLVja8y1'
 owner = 'zrobert77'
 
-
-api = twitter.Api(consumer_key=api_key,
-  consumer_secret=api_secret,
-  access_token_key=access_token,
-  access_token_secret=access_token_secret)
-
 #print(api.VerifyCredentials())
 
 def clean(x):
@@ -33,9 +27,9 @@ def clean(x):
 
 def get_county_db(filename):
 	df = pd.read_csv(filename, delimiter='\t')
-	print list(df.columns)
+	#print list(df.columns)
 	df=df.rename(columns = {'INTPTLONG                                                                                                               ':'INTPTLONG'})
-	print df[['GEOID','INTPTLAT','INTPTLONG']]
+	#print df[['GEOID','INTPTLAT','INTPTLONG']]
 	# df['GEOID'] = df['GEOID'].apply(clean)
 	# print df[['GEOID','INTPTLAT','INTPTLONG']]
 	return df
@@ -44,29 +38,31 @@ def get_county_db(filename):
 def get_lat_lon_from_FIPS(fips, df):
 	#TODO: also use land data to get county radius ! 
 	row = df[df['GEOID'] == fips]
-	print row
+	#print row
 	return (float(row['INTPTLAT']), float(row['INTPTLONG']))
 
 def get_related_terms():
 	return ["opioid",
 	"opioids", 
 	'Fiorional', 
+	'Fentanyl',
 	'Codeine'
 	'RobitussinA-C',
+	'Robitussin',
 	'TylenolwithCodeine'
 	'EmpirinwithCodeine',
 	'Roxanol',
 	'Duramorph',
 	'Demerol',
 	'CaptainCody',
-	'Cody',
-	'Schoolboy',
+	#'Cody',
+	#'Schoolboy',
 	'DoorsFours',
 	'PancakesSyrup',
-	'Loads',
-	'M',
+	#'Loads',
+	#'M',
 	'MissEmma',
-	'Monkey',
+	#'Monkey',
 	'WhiteStuff',
 	'Demmies',
 	'Painkiller',
@@ -78,43 +74,77 @@ def get_related_terms():
 	'Percocet',
 	'Tylox',
 	'Dilaudid',
-	'Apache',
+	#'Apache',
 	'Chinagirl',
 	'Dancefever',
 	'Goodfella',
 	'Murder8',
 	'TangoandCash',
 	'Chinawhite',
-	'Friend',
-	'Jackpot',
-	'TNT',
+	'MexicanBrown'
+	#'Friend',
+	#'Jackpot',
+	#'TNT',
 	'Oxy80',
 	'oxy',
 	'Oxycat',
-	'Hillbilly heroin',
+	'oxycodone',
+	'Vicodin',
+	'hydrocodone',
+	'Hillbillyheroin',
+	'heroin',
 	'Percs',
 	'Perks',
-	'Juice',
+	#'Juice',
+	'superice',
 	'Dillies'
 	 ]
 
 
 def get_fips_list():
 	#TODO get 608 county codes and prepend a zero if need be ?? or int()
+	df_codes = pd.read_csv('codes_x_np', delimiter='\n', header=None)
+	codes_x_np = df_codes.as_matrix()
+	result = codes_x_np.reshape((608,))
+	return result
+
+	
 
 
 
-def create_twitter_db(fips_codes, opioid_terms):
+def create_twitter_db(api, fips_codes, opioid_terms):
 	county_db = get_county_db('data/2015_Gaz_counties_national.txt')
+	counts = []
+	tweets = []
+	codes = []
+	after_num = False
 	for fips_code in fips_codes:
-		(lat, lon) = get_lat_lon_from_FIPS(fips_code, county_db)
-		geocode = str(res1[0]) + ',' + str(res1[1]) + ",20mi"
-		county_tweet_count = 0
-		county_tweets = []
-		for term in opioid_terms:
-			search = api.GetSearch(term, count=100, geocode=geocode)#until='2016-01-01') # Replace happy with your search
-			county_tweet_count += len(search)
-			county_tweets.append((tweet.location, tweet.text))
+		if int(fips_code) == 39165:
+			after_num = True
+		if after_num:
+			codes.append(fips_code)
+			print "Getting data for county #" + str(fips_code)
+			(lat, lon) = get_lat_lon_from_FIPS(fips_code, county_db)
+			#"latitude,longitude,radius"
+			geocode = str(lat) + ',' + str(lon) + ",20mi"
+			county_tweet_count = 0
+			county_tweets = []
+			for term in opioid_terms:
+				search = api.GetSearch(term, count=100, geocode=geocode)#until='2016-01-01') # Replace happy with your search
+				county_tweet_count += len(search)
+				for tweet in search:
+					county_tweets.append(tweet.AsDict())   #(tweet.location, tweet.text))
+			counts.append(county_tweet_count)
+			tweets.append(county_tweets)
+			df_result = pd.DataFrame(data={'FIPS': codes, 'total_count': counts, 'tweets': tweets})
+			df_result.to_csv('tweetsV2_6.csv', sep='\t', encoding='utf-8')
+	# print len(fips_codes)
+	# print len(counts)
+	# print len(tweets)
+	df_result = pd.DataFrame(data={'FIPS': fips_codes, 'total_count': counts, 'tweets': tweets})
+	df_result.to_csv('tweetsV2_6.csv', sep='\t', encoding='utf-8')
+	return df_result
+	
 
 
 # county_db = get_county_db('data/2015_Gaz_counties_national.txt')
@@ -122,13 +152,19 @@ def create_twitter_db(fips_codes, opioid_terms):
 # print res1
 # geocode = str(res1[0]) + ',' + str(res1[1]) + ",20mi"
 # print geocode
+#search = api.GetSearch("OPIOID", count=100, geocode=geocode)#until='2016-01-01') # Replace happy with your search
+#print len(search)
+# tweets = [i.AsDict() for i in search]
 
 
-search = api.GetSearch("OPIOID", count=100, geocode=geocode)#until='2016-01-01') # Replace happy with your search
-print len(search)
-tweets = [i.AsDict() for i in search]
-for tweet in search:
-	print(tweet.location, tweet.text)
+api = twitter.Api(consumer_key=api_key,
+  consumer_secret=api_secret,
+  access_token_key=access_token,
+  access_token_secret=access_token_secret,
+  sleep_on_rate_limit=True)
+
+create_twitter_db(api, get_fips_list(), get_related_terms())
+
 
 
 

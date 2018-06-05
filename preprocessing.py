@@ -32,6 +32,9 @@ def get_X():
 	X_mort = get_X_mortality()
 	X = pd.merge(X_pr, X_mort, on='county_code', how='outer')
 	X = X.fillna(value=0)
+	# print "++++++++++++++++X ++++++++++++++++"
+	# print len(X['county_code'].values.tolist())
+	# print X['county_code'].values.tolist()
 	return X
 
 def get_X_prescribing_rates():
@@ -44,6 +47,9 @@ def get_X_prescribing_rates():
 		X_temp[str(i)+' Prescribing Rate'] = pd.to_numeric(X_temp[str(i)+' Prescribing Rate'], errors='coerce').fillna(0)#.replace('-', 0.0)
 		X = pd.merge(X, X_temp[['FIPS County Code', str(i)+' Prescribing Rate']], on ='FIPS County Code', how='outer')
 	X = X.rename(index=str, columns={'FIPS County Code': "county_code"})
+	# print "++++++++++++++++X PR++++++++++++++++"
+	# print len(X['county_code'].values.tolist())
+	# print X['county_code'].values.tolist()
 	X = X.fillna(value=0)
 	X = X.drop_duplicates()
 
@@ -53,7 +59,7 @@ def get_X_prescribing_rates():
 def get_X_mortality():
 	X_full_mortality = pd.read_csv('data/mortality_2008to2015.csv') 
 	X_full_mortality.columns  = ['notes', 'county', 'county_code', 'year', 'year_code', 'COD', 'COD_code', 'deaths', 'population', 'crude_rate', 'aa_rate']
-
+	
 	# print X_full_mortality.columns
 	# print X_full_mortality['COD_code'].unique()
 
@@ -76,13 +82,16 @@ def get_X_mortality():
 	X_temp.columns = ['county_code', 'population_2015']
 	X = pd.merge(X, X_temp, on='county_code', how='outer')
 	X = X.drop_duplicates()
+	# print "++++++++++++++++X M++++++++++++++++"
+	# print len(X['county_code'].values.tolist())
+	# print X['county_code'].values.tolist()
 	return X
 
 
 def get_Y(single_value = True):
 	Y_full = pd.read_csv('data/mortality_2016.csv')
 	Y_full.columns  = ['notes', 'county', 'county_code', 'year', 'year_code', 'COD', 'COD_code', 'deaths', 'population', 'crude_rate', 'aa_rate']
-	
+	#print Y_full['county_code'].values.tolist()
 	Y = Y_full[['county_code', 'population']].copy()
 
 	for dc in ['Y14', 'X42', 'X44', 'X41', 'X64', 'Y12', 'X61', 'X62', 'X60', 'X40', 'Y11']:
@@ -94,36 +103,61 @@ def get_Y(single_value = True):
 	#TODO (maybe): sum raw death count over all death codes 
 	#Y['crude_rate'] = Y['crude_rate'].str.replace(r' \(Unreliable\)', '').astype('double')
 	Y = Y.fillna(value=0)
+	# print "++++++++++++++++Y M prev++++++++++++++++"
+	# print len(Y_full['county_code'].values.tolist())
+	# print Y_full['county_code'].values.tolist()
 	if single_value:
 		Y['total_death_rate'] = Y[['Y14', 'X42', 'X44', 'X41', 'X64', 'Y12', 'X61', 'X62', 'X60', 'X40', 'Y11']].sum(axis=1)
-		Y['total_death_rate'] = Y['total_death_rate']/Y['population']
+		Y['total_death_rate'] = Y['total_death_rate']*1000/Y['population']
 		Y = Y.drop(['population', 'Y14', 'X42', 'X44', 'X41', 'X64', 'Y12', 'X61', 'X62', 'X60', 'X40', 'Y11'], axis=1)
-	Y = Y.drop_duplicates()
+	Y = Y.drop_duplicates()	
+	# print "++++++++++++++++Y M++++++++++++++++"
+	# print len(Y['county_code'].values.tolist())
+	# print Y['county_code'].values.tolist()
 	return Y 
 
 
 
-X = get_X()
-Y = get_Y()
+X = get_X()	#x has 3143 	
+Y = get_Y()   #y has 1154 unique counties 
 
 
-# print X.columns
+print X.columns
 # print X.shape[0]
 # print len(X['county_code'].unique())
-# print Y.columns
+print Y.columns
 # print Y.shape[0]
 # print len(Y['county_code'].unique())
 
-has_x = X['county_code'].values.tolist()
-overlap = Y.loc[Y['county_code'].isin(has_x)].copy()
+has_y = Y['county_code'].values.tolist()
+overlap = X.loc[X['county_code'].isin(has_y)].copy()
 county_list = overlap['county_code'].values.tolist()
+print county_list
+print len(county_list)
 X = X.loc[X['county_code'].isin(county_list)].copy()
 Y = Y.loc[Y['county_code'].isin(county_list)].copy()
 X = X.sort_values(by=['county_code'])
 Y = Y.sort_values(by=['county_code'])
 X = X.set_index('county_code')
 Y = Y.set_index('county_code')
-# print X.columns
+print X
+print Y
+# codes_x = X[['county_code']]
+# codes_y = Y[['county_code']]
+
+# codes_x_np = codes_x.as_matrix()
+# codes_y_np = codes_y.as_matrix()
+# print codes_x_np.shape
+# print codes_y_np.shape
+
+# write_matrix(codes_x_np, 'codes_x_np')
+# write_matrix(codes_x_np, 'codes_x_np')
+
+
+
+
+print X.columns
+print Y.columns
 # X = X.drop(['county_code'], axis=1)
 # Y = Y.drop(['county_code'], axis=1)
 # print X.columns
@@ -133,7 +167,6 @@ X_np = X.as_matrix()
 Y_np = Y.as_matrix()
 print X_np.shape
 print Y_np.shape
-print Y_np[0]
 
 write_matrix(X_np, 'X_np')
 write_matrix(Y_np, 'Y_np')

@@ -17,9 +17,13 @@ from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import normalize
 from sklearn.pipeline import Pipeline
 from matplotlib import pyplot 
-
+from keras import optimizers
+from keras.callbacks import TensorBoard
+import os
+import tensorflow as tf
 
 def write_matrix(matrix, filename):
 	# write it
@@ -58,14 +62,53 @@ def data_splitter(X, y, test_size=0.1,verbose=True):
 
 def try_NN1(X_train, X_test, y_train, y_test):
 	model = Sequential()
-	model.add(Dense(50, input_shape = [98], activation='sigmoid'))
-	model.add(Dense(20, input_shape = [98], activation='sigmoid'))
+	model.add(Dense(50, input_shape = [98], activation='relu'))
+	model.add(Dense(20, input_shape = [98], activation='relu'))
 	model.add(Dense(1, activation='relu'))
-	model.compile(optimizer='sgd', loss='mean_squared_error', metrics=['accuracy'])
+	model.compile(optimizer='sgd', loss='mean_squared_error', metrics=['mse', 'mae', 'mape'])
 	model.summary()
 	number_of_iterations = 100
 	batch_size = 20
-	model.fit(X_train, y_train, batch_size=batch_size, epochs=number_of_iterations, verbose=2, validation_data=(X_test, y_test))
+	model.fit(X_train, y_train, batch_size=batch_size, epochs=number_of_iterations, verbose=1, validation_data=(X_test, y_test))
+
+
+#cite: https://stackoverflow.com/questions/47877475/keras-tensorboard-plot-train-and-validation-scalars-in-a-same-figure
+class TrainValTensorBoard(TensorBoard):
+    def __init__(self, log_dir='./logs', **kwargs):
+        # Make the original `TensorBoard` log to a subdirectory 'training'
+        now = time.strftime("%c")
+        training_log_dir = os.path.join(log_dir, str(now) +'_training')
+        super(TrainValTensorBoard, self).__init__(training_log_dir, **kwargs)
+
+        # Log the validation metrics to a separate subdirectory
+        self.val_log_dir = os.path.join(log_dir, str(now) +'_validation')
+
+    def set_model(self, model):
+        # Setup writer for validation metrics
+        self.val_writer = tf.summary.FileWriter(self.val_log_dir)
+        super(TrainValTensorBoard, self).set_model(model)
+
+    def on_epoch_end(self, epoch, logs=None):
+        # Pop the validation logs and handle them separately with
+        # `self.val_writer`. Also rename the keys so that they can
+        # be plotted on the same figure with the training metrics
+        logs = logs or {}
+        val_logs = {k.replace('val_', ''): v for k, v in logs.items() if k.startswith('val_')}
+        for name, value in val_logs.items():
+            summary = tf.Summary()
+            summary_value = summary.value.add()
+            summary_value.simple_value = value.item()
+            summary_value.tag = name
+            self.val_writer.add_summary(summary, epoch)
+        self.val_writer.flush()
+
+        # Pass the remaining logs to `TensorBoard.on_epoch_end`
+        logs = {k: v for k, v in logs.items() if not k.startswith('val_')}
+        super(TrainValTensorBoard, self).on_epoch_end(epoch, logs)
+
+    def on_train_end(self, logs=None):
+        super(TrainValTensorBoard, self).on_train_end(logs)
+        self.val_writer.close()
 
 
 #CITE: https://machinelearningmastery.com/regression-tutorial-keras-deep-learning-library-python/
@@ -76,7 +119,8 @@ def baseline_model():
 	model.add(Dense(20, input_shape = [98], activation='relu'))
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
-	model.compile(loss='mean_squared_error', optimizer='adam', metrics=['mse', 'mae', 'mape'])
+	adam = optimizers.Adam()#clipvalue=1000, clipnorm=1)
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
 	return model
 
 def try_NN2(X, Y):
@@ -102,7 +146,7 @@ def try_NN2(X, Y):
 		model = baseline_model()
 		now = time.strftime("%c")
 		tbCallBack = keras.callbacks.TensorBoard(log_dir='./logs/'+now, histogram_freq=0, write_graph=True, write_images=True)
-		history = model.fit(X[train], Y[train],  epochs=5000, batch_size=len(X), verbose=0, callbacks=[tbCallBack])
+		history = model.fit(X[train], Y[train],  validation_split=0.15, epochs=7500, batch_size=len(X), verbose=0, callbacks=[TrainValTensorBoard(write_graph=False)])#[tbCallBack])
 		# TODO: maybe use validation_split=0.2,
 		# evaluate the model
 		scores = model.evaluate(X[test], Y[test], verbose=0)
@@ -121,9 +165,12 @@ def try_NN2(X, Y):
 	# history = model.fit(X, Y, validation_split=0.2, epochs=2500, batch_size=len(X), verbose=1, callbacks=[tbCallBack])
 
 
-X_np = read_matrix('X_np')
+X_np = normalize(read_matrix('X_np'))
+
 Y_np = read_matrix('Y_np')
 X_train, X_test, y_train, y_test = data_splitter(X_np, Y_np)
+#X_train = normalize(X_train) #is this helpful?
 y_train = np.reshape(y_train, (len(y_train), 1))
 
+#try_NN1(X_train, X_test, y_train, y_test)
 try_NN2(X_np, Y_np)
