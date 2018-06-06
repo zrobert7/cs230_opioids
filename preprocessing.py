@@ -168,8 +168,8 @@ Y_np = Y.as_matrix()
 print X_np.shape
 print Y_np.shape
 
-write_matrix(X_np, 'X_np')
-write_matrix(Y_np, 'Y_np')
+# write_matrix(X_np, 'X_np')
+# write_matrix(Y_np, 'Y_np')
 
 
 

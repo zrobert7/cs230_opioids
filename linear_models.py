@@ -4,12 +4,10 @@ import numpy as np
 import statsmodels.api as sm
 from sklearn import linear_model
 import csv
-
 import matplotlib.pyplot as plt
-
 from sklearn.metrics import r2_score
 from sklearn.linear_model import ElasticNet
-
+from sklearn.preprocessing import normalize
 
 
 def try_LR(X, y):
@@ -86,7 +84,7 @@ def read_matrix(filename):
 		table = np.matrix([[float(e) for e in r] for r in reader])
 		return table
 
-X_np = read_matrix('X_np')
+X_np = normalize(read_matrix('X_np'))
 Y_np = read_matrix('Y_np')
 
 try_lasso(X_np, Y_np)

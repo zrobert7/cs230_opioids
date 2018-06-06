@@ -1,3 +1,5 @@
+
+
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
@@ -74,7 +76,7 @@ def try_NN1(X_train, X_test, y_train, y_test):
 
 #cite: https://stackoverflow.com/questions/47877475/keras-tensorboard-plot-train-and-validation-scalars-in-a-same-figure
 class TrainValTensorBoard(TensorBoard):
-    def __init__(self, log_dir='./logs/lr', **kwargs):
+    def __init__(self, log_dir='./logs/twitter/', **kwargs):
         # Make the original `TensorBoard` log to a subdirectory 'training'
         now = time.strftime("%c")
         training_log_dir = os.path.join(log_dir, str(now) +'_training')
@@ -116,7 +118,7 @@ class TrainValTensorBoard(TensorBoard):
 def NN1_model(lr=0.001):
 	# create model
 	model = Sequential()
-	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
+	model.add(Dense(100, input_dim=100, kernel_initializer='normal', activation='relu'))	
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam(lr=lr)#clipvalue=1000, clipnorm=1)
@@ -213,30 +215,10 @@ def try_NN_kfold(X, Y, model_name=NN1_model, lr=0.001):
 	print("%.2f (+/- %.2f)" % (np.mean(mse_scores), np.std(mse_scores)))
 	print("%.2f (+/- %.2f)" % (np.mean(mae_scores), np.std(mae_scores)))
 
-	# results = cross_val_score(estimator, X, Y, cv=kfold)
-	# print("Results: %.2f (%.2f) MSE" % (results.mean(), results.std()))
-	# model = baseline_model()
-	# now = time.strftime("%c")
-	# tbCallBack = keras.callbacks.TensorBoard(log_dir='./logs/'+now, histogram_freq=0, write_graph=True, write_images=True)
-	# history = model.fit(X, Y, validation_split=0.2, epochs=2500, batch_size=len(X), verbose=1, callbacks=[tbCallBack])
 
-
-X_np = normalize(read_matrix('X_np'))
-
+#X_np = normalize(read_matrix('X_embedded_np'))
+X_np = normalize(pd.read_csv('X_embedded_np.csv', sep=' ',header=None).as_matrix())
+print X_np.shape
+print X_np
 Y_np = read_matrix('Y_np')
-X_train, X_test, y_train, y_test = data_splitter(X_np, Y_np)
-#X_train = normalize(X_train) #is this helpful?
-y_train = np.reshape(y_train, (len(y_train), 1))
-
-# #try_NN1(X_train, X_test, y_train, y_test)
-# try_NN_kfold(X_np, Y_np, NN1_model)
-# try_NN_kfold(X_np, Y_np, NN2_model)
-# try_NN_kfold(X_np, Y_np, NN3_model)
-# try_NN_kfold(X_np, Y_np, NN1_clip_model)
-# try_NN_kfold(X_np, Y_np, NN2_clip_model)
-# try_NN_kfold(X_np, Y_np, NN3_clip_model)
-
-
-lrs = [0.1, 0.01, 0.001, 0.0001]
-for lr in lrs:
-	try_NN_kfold(X_np, Y_np, NN1_clip_model, lr)
+try_NN_kfold(X_np, Y_np)
