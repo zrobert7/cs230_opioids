@@ -9,6 +9,7 @@ from sklearn.metrics import r2_score
 from sklearn.linear_model import ElasticNet
 import keras
 from keras.layers import Dense
+from keras.layers import Dropout
 from keras.models import Sequential
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
@@ -24,6 +25,23 @@ from keras import optimizers
 from keras.callbacks import TensorBoard
 import os
 import tensorflow as tf
+import keras.backend as K
+from sklearn import metrics
+from sklearn.metrics import r2_score
+
+def r2(y_true, y_pred):
+	#return r2_score(y_true, y_pred)
+	#https://stackoverflow.com/questions/45250100/kerasregressor-coefficient-of-determination-r2-score
+	SS_res =  K.sum(K.square( y_true-y_pred ))
+	SS_tot = K.sum(K.square( y_true - K.mean(y_true) ) )
+	return ( 1 - SS_res/(SS_tot + K.epsilon()) )
+
+def r2_loss(y_true, y_pred):
+	#return r2_score(y_true, y_pred)
+	#https://stackoverflow.com/questions/45250100/kerasregressor-coefficient-of-determination-r2-score
+	SS_res =  K.sum(K.square( y_true-y_pred ))
+	SS_tot = K.sum(K.square( y_true - K.mean(y_true) ) )
+	return (SS_res/(SS_tot + K.epsilon()) )
 
 def write_matrix(matrix, filename):
 	# write it
@@ -65,7 +83,7 @@ def try_NN1(X_train, X_test, y_train, y_test):
 	model.add(Dense(50, input_shape = [98], activation='relu'))
 	model.add(Dense(20, input_shape = [98], activation='relu'))
 	model.add(Dense(1, activation='relu'))
-	model.compile(optimizer='sgd', loss='mean_squared_error', metrics=['mse', 'mae', 'mape'])
+	model.compile(optimizer='sgd', loss=r2_loss, metrics=['mse', 'mae', 'mape', r2])
 	model.summary()
 	number_of_iterations = 100
 	batch_size = 20
@@ -74,7 +92,7 @@ def try_NN1(X_train, X_test, y_train, y_test):
 
 #cite: https://stackoverflow.com/questions/47877475/keras-tensorboard-plot-train-and-validation-scalars-in-a-same-figure
 class TrainValTensorBoard(TensorBoard):
-    def __init__(self, log_dir='./logs/lr', **kwargs):
+    def __init__(self, log_dir='./logs/r2_lessepochs', **kwargs):
         # Make the original `TensorBoard` log to a subdirectory 'training'
         now = time.strftime("%c")
         training_log_dir = os.path.join(log_dir, str(now) +'_training')
@@ -120,7 +138,7 @@ def NN1_model(lr=0.001):
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam(lr=lr)#clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
 	return model
 
 def NN1_clip_model(lr=0.001):
@@ -130,7 +148,7 @@ def NN1_clip_model(lr=0.001):
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam(lr=lr, clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
+	model.compile(loss=r2_loss, optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
 	return model
 
 def NN2_model(lr=0.001):
@@ -141,7 +159,7 @@ def NN2_model(lr=0.001):
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam()#clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
 	return model
 
 def NN2_clip_model(lr=0.001):
@@ -152,7 +170,7 @@ def NN2_clip_model(lr=0.001):
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam(clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
 	return model
 
 def NN3_model(lr=0.001):
@@ -164,7 +182,7 @@ def NN3_model(lr=0.001):
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam()#clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
 	return model
 
 def NN3_clip_model(lr=0.001):
@@ -176,7 +194,21 @@ def NN3_clip_model(lr=0.001):
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam(clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
+	return model
+
+def NN4_clip_model(lr=0.001):
+	# create model
+	model = Sequential()
+	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
+	model.add(Dropout(0.2))
+	model.add(Dense(50, input_shape = [98], activation='relu'))
+	model.add(Dropout(0.2))
+	model.add(Dense(20, input_shape = [98], activation='relu'))
+	model.add(Dense(1, kernel_initializer='normal'))
+	# Compile model
+	adam = optimizers.Adam(clipvalue=1000, clipnorm=1)
+	model.compile(loss=r2_loss, optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
 	return model
 
 def try_NN_kfold(X, Y, model_name=NN1_model, lr=0.001):
@@ -188,6 +220,7 @@ def try_NN_kfold(X, Y, model_name=NN1_model, lr=0.001):
 
 	mse_scores = []
 	mae_scores = []
+	r2_scores = []
 	for train, test in kfold.split(X, Y):
 	  # create model
 		# model = Sequential()
@@ -202,16 +235,19 @@ def try_NN_kfold(X, Y, model_name=NN1_model, lr=0.001):
 		model = model_name(lr)
 		now = time.strftime("%c")
 		tbCallBack = keras.callbacks.TensorBoard(log_dir='./logs/'+now, histogram_freq=0, write_graph=True, write_images=True)
-		history = model.fit(X[train], Y[train],  validation_split=0.15, epochs=5000, batch_size=len(X), verbose=0, callbacks=[TrainValTensorBoard(write_graph=False)])#[tbCallBack])
+		history = model.fit(X[train], Y[train],  validation_split=0.15, epochs=7500, batch_size=len(X), verbose=0, callbacks=[TrainValTensorBoard(write_graph=False)])#[tbCallBack])
 		# TODO: maybe use validation_split=0.2,
 		# evaluate the model
 		scores = model.evaluate(X[test], Y[test], verbose=0)
 		print("%s: %.2f" % (model.metrics_names[1], scores[1]))
 		print("%s: %.2f" % (model.metrics_names[2], scores[2]))
+		print("%s: %.2f" % (model.metrics_names[4], scores[4]))
 		mse_scores.append(scores[1])
 		mae_scores.append(scores[2])
+		r2_scores.append(scores[4])
 	print("%.2f (+/- %.2f)" % (np.mean(mse_scores), np.std(mse_scores)))
 	print("%.2f (+/- %.2f)" % (np.mean(mae_scores), np.std(mae_scores)))
+	print("%.2f (+/- %.2f)" % (np.mean(r2_scores), np.std(r2_scores)))
 
 	# results = cross_val_score(estimator, X, Y, cv=kfold)
 	# print("Results: %.2f (%.2f) MSE" % (results.mean(), results.std()))
@@ -232,11 +268,12 @@ y_train = np.reshape(y_train, (len(y_train), 1))
 # try_NN_kfold(X_np, Y_np, NN1_model)
 # try_NN_kfold(X_np, Y_np, NN2_model)
 # try_NN_kfold(X_np, Y_np, NN3_model)
-# try_NN_kfold(X_np, Y_np, NN1_clip_model)
+#try_NN_kfold(X_np, Y_np, NN1_clip_model)
 # try_NN_kfold(X_np, Y_np, NN2_clip_model)
 # try_NN_kfold(X_np, Y_np, NN3_clip_model)
+try_NN_kfold(X_np, Y_np, NN4_clip_model)
 
 
-lrs = [0.1, 0.01, 0.001, 0.0001]
-for lr in lrs:
-	try_NN_kfold(X_np, Y_np, NN1_clip_model, lr)
+# lrs = [0.1, 0.01, 0.001, 0.0001]
+# for lr in lrs:
+# 	try_NN_kfold(X_np, Y_np, NN1_clip_model, lr)
