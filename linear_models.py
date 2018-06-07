@@ -86,6 +86,10 @@ def read_matrix(filename):
 
 X_np = normalize(read_matrix('X_np'))
 Y_np = read_matrix('Y_np')
+X_np = pd.read_csv('X_embedded_np.csv', sep=' ',header=None).as_matrix()
+X_np = normalize(X_np, axis=0)
+X_np = pd.read_csv('X_tweet_counts.csv', sep=' ',header=None).as_matrix().T
+print X_np.shape
 
 try_lasso(X_np, Y_np)
 try_elastic(X_np, Y_np)

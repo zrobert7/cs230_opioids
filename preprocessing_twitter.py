@@ -22,11 +22,11 @@ def get_embedding(sentence, model):
 	words = list(model.wv.vocab)
 	# print(len(words))
 	# X = model[model.wv.vocab]
-	result = np.zeros(100)
+	result = np.zeros(140300)
+	idx = 0
 	for word in sentence:
-		result += model[word]
-	if len(sentence) > 1:
-		result /= len(sentence)
+		result[idx*100:(idx+1)*100] = model[word]
+		idx += 1
 	return result
 
 	# print model[sentences[0]]
@@ -113,7 +113,7 @@ def get_tweets(X, FIPS, single_doc=True):
 		tweets = tweets + tweet
 
 	print tweets
-	return tweets
+	return tweets, count_single_county_tweets
 
 #print json.loads(single_county_tweets, encoding='utf=8')
 #print ast.literal_eval(single_county_tweets)
@@ -131,13 +131,15 @@ X = X.sort_values(by=['FIPS'])
 print X.columns
 
 full_tweets = []
+counts = []
 X_result = X.copy()
 for i in range(608):
 	fip = X.loc[i].FIPS#.values[0]
 	if not isinstance(fip, int):
 		fip = fip.values[0]
 	print fip
-	temp = get_tweets(X, fip)
+	temp, countt  = get_tweets(X, fip)
+	counts.append(countt)
 	X_result.loc[i, 'tweets'] = temp
 	full_tweets.append(temp.split())
 #print X_result.tweets
@@ -162,17 +164,24 @@ model = Word2Vec(full_tweets, min_count=1)#, # tokenized senteces, list of list 
 
 X_embedded = []
 #X.columns = ['FIPS', 'total_count',	'tweets_embedding']
+max_len = 0
 for i in range(608):
 	sentence = full_tweets[i]
+	if len(sentence) > max_len:
+		max_len = len(sentence)
 	result_embedding = get_embedding(sentence, model)
 	X_embedded.append(result_embedding)
 
 print np.matrix(X_embedded)
 X_embedded = np.matrix(X_embedded)
+X_tweet_counts = np.matrix(counts)
 print X_embedded
+print X_embedded.shape
 #print X
 dataframe = pd.DataFrame(data=X_embedded.astype(float))
 dataframe.to_csv('X_embedded_np.csv', sep=' ', header=False, index=False)
+dataframe = pd.DataFrame(data=X_tweet_counts.astype(float))
+dataframe.to_csv('X_tweet_counts.csv', sep=' ', header=False, index=False)
 #write_matrix(X_embedded, 'X_embedded_np')
 # write_matrix(X_np, 'X_twitter_np')
 # write_matrix(Y_np, 'Y_twitter_np')

@@ -62,16 +62,6 @@ def data_splitter(X, y, test_size=0.1,verbose=True):
 
 	return X_train, X_test, y_train, y_test
 
-def try_NN1(X_train, X_test, y_train, y_test):
-	model = Sequential()
-	model.add(Dense(50, input_shape = [98], activation='relu'))
-	model.add(Dense(20, input_shape = [98], activation='relu'))
-	model.add(Dense(1, activation='relu'))
-	model.compile(optimizer='sgd', loss='mean_squared_error', metrics=['mse', 'mae', 'mape'])
-	model.summary()
-	number_of_iterations = 100
-	batch_size = 20
-	model.fit(X_train, y_train, batch_size=batch_size, epochs=number_of_iterations, verbose=1, validation_data=(X_test, y_test))
 
 
 #cite: https://stackoverflow.com/questions/47877475/keras-tensorboard-plot-train-and-validation-scalars-in-a-same-figure
@@ -112,81 +102,35 @@ class TrainValTensorBoard(TensorBoard):
         super(TrainValTensorBoard, self).on_train_end(logs)
         self.val_writer.close()
 
-
-#CITE: https://machinelearningmastery.com/regression-tutorial-keras-deep-learning-library-python/
-
 def NN1_model(lr=0.001):
-	# create model
 	model = Sequential()
-	model.add(Dense(100, input_dim=100, kernel_initializer='normal', activation='relu'))	
-	model.add(Dense(1, kernel_initializer='normal'))
-	# Compile model
-	adam = optimizers.Adam(lr=lr)#clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
-	return model
-
-def NN1_clip_model(lr=0.001):
-	# create model
-	model = Sequential()
-	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
-	model.add(Dense(1, kernel_initializer='normal'))
-	# Compile model
-	adam = optimizers.Adam(lr=lr, clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
-	return model
-
-def NN2_model(lr=0.001):
-	# create model
-	model = Sequential()
-	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
-	model.add(Dense(20, input_shape = [98], activation='relu'))
+	model.add(Dense(100, input_shape = [140300], activation='relu'))
+	model.add(Dense(50, input_shape = [140300], activation='relu'))
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam()#clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
-	return model
-
-def NN2_clip_model(lr=0.001):
-	# create model
-	model = Sequential()
-	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
-	model.add(Dense(20, input_shape = [98], activation='relu'))
-	model.add(Dense(1, kernel_initializer='normal'))
-	# Compile model
-	adam = optimizers.Adam(clipvalue=1000, clipnorm=1)
 	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
 	return model
 
 def NN3_model(lr=0.001):
 	# create model
 	model = Sequential()
-	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
-	model.add(Dense(50, input_shape = [98], activation='relu'))
-	model.add(Dense(20, input_shape = [98], activation='relu'))
+	model.add(Dense(100, input_dim=100, kernel_initializer='normal', activation='relu'))	
+	model.add(Dense(50, input_shape = [100], activation='relu'))
+	model.add(Dense(20, input_shape = [100], activation='relu'))
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam()#clipvalue=1000, clipnorm=1)
 	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
 	return model
 
-def NN3_clip_model(lr=0.001):
-	# create model
-	model = Sequential()
-	model.add(Dense(98, input_dim=98, kernel_initializer='normal', activation='relu'))	
-	model.add(Dense(50, input_shape = [98], activation='relu'))
-	model.add(Dense(20, input_shape = [98], activation='relu'))
-	model.add(Dense(1, kernel_initializer='normal'))
-	# Compile model
-	adam = optimizers.Adam(clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape'], )
-	return model
 
-def try_NN_kfold(X, Y, model_name=NN1_model, lr=0.001):
+def try_NN_kfold(X, Y, model_name, lr=0.001):
 	seed = 7
 	np.random.seed(seed)
 	# evaluate model with standardized dataset
 	#estimator = KerasRegressor(build_fn=baseline_model, epochs=1, batch_size=5, verbose=1)
-	kfold = KFold(n_splits=10, random_state=seed, shuffle=True)
+	kfold = KFold(n_splits=5, random_state=seed, shuffle=True)
 
 	mse_scores = []
 	mae_scores = []
@@ -204,7 +148,7 @@ def try_NN_kfold(X, Y, model_name=NN1_model, lr=0.001):
 		model = model_name(lr)
 		now = time.strftime("%c")
 		tbCallBack = keras.callbacks.TensorBoard(log_dir='./logs/'+now, histogram_freq=0, write_graph=True, write_images=True)
-		history = model.fit(X[train], Y[train],  validation_split=0.15, epochs=5000, batch_size=len(X), verbose=0, callbacks=[TrainValTensorBoard(write_graph=False)])#[tbCallBack])
+		history = model.fit(X[train], Y[train],  validation_split=0.15, epochs=500, batch_size=len(X), verbose=0, callbacks=[TrainValTensorBoard(write_graph=False)])#[tbCallBack])
 		# TODO: maybe use validation_split=0.2,
 		# evaluate the model
 		scores = model.evaluate(X[test], Y[test], verbose=0)
@@ -216,9 +160,22 @@ def try_NN_kfold(X, Y, model_name=NN1_model, lr=0.001):
 	print("%.2f (+/- %.2f)" % (np.mean(mae_scores), np.std(mae_scores)))
 
 
-#X_np = normalize(read_matrix('X_embedded_np'))
-X_np = normalize(pd.read_csv('X_embedded_np.csv', sep=' ',header=None).as_matrix())
-print X_np.shape
-print X_np
+def plot_(X, Y_np):
+	plt.scatter(X, Y_np)
+	plt.show()
+
+
 Y_np = read_matrix('Y_np')
-try_NN_kfold(X_np, Y_np)
+X_np = pd.read_csv('X_embedded_np.csv', sep=' ',header=None).as_matrix()
+# X_counts = pd.read_csv('X_tweet_counts.csv', sep=' ',header=None).as_matrix()
+# #X_np = normalize(X_np, axis=0)
+# plot_(X_counts, Y_np)
+print X_np.shape
+#print X_np
+
+try_NN_kfold(X_np, Y_np, NN1_model)
+
+
+
+
+
