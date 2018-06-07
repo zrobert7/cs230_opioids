@@ -178,6 +178,34 @@ def NN3_model_r2(lr=0.001):
 	model.compile(loss=r2_loss, optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
 	return model
 
+def NN3_model_r2_dropout(lr=0.001):
+	# create model
+	model = Sequential()
+	model.add(Dense(100, input_dim=140300, kernel_initializer='normal', activation='relu'))	
+	model.add(Dropout(0.2))
+	model.add(Dense(50, input_shape = [100], activation='relu'))
+	model.add(Dropout(0.2))
+	model.add(Dense(20, input_shape = [100], activation='relu'))
+	model.add(Dense(1, kernel_initializer='normal'))
+	# Compile model
+	adam = optimizers.Adam()#clipvalue=1000, clipnorm=1)
+	model.compile(loss=r2_loss, optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
+	return model
+
+def NN3_model_MSE_dropout(lr=0.001):
+	# create model
+	model = Sequential()
+	model.add(Dense(100, input_dim=140300, kernel_initializer='normal', activation='relu'))	
+	model.add(Dropout(0.2))
+	model.add(Dense(50, input_shape = [100], activation='relu'))
+	model.add(Dropout(0.2))
+	model.add(Dense(20, input_shape = [100], activation='relu'))
+	model.add(Dense(1, kernel_initializer='normal'))
+	# Compile model
+	adam = optimizers.Adam()#clipvalue=1000, clipnorm=1)
+	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
+	return model
+
 
 def try_NN_kfold(X, Y, model_name, lr=0.001):
 	seed = 7
@@ -191,7 +219,7 @@ def try_NN_kfold(X, Y, model_name, lr=0.001):
 	mae_scores = []
 	idx = 0
 	for train, test in kfold.split(X, Y):
-		if idx == 3:
+		if idx == 2:
 			break
 	  # create model
 		# model = Sequential()
@@ -206,7 +234,7 @@ def try_NN_kfold(X, Y, model_name, lr=0.001):
 		model = model_name(lr)
 		now = time.strftime("%c")
 		tbCallBack = keras.callbacks.TensorBoard(log_dir='./logs/'+now, histogram_freq=0, write_graph=True, write_images=True)
-		history = model.fit(X[train], Y[train],  validation_split=0.15, epochs=750, batch_size=len(X), verbose=0, callbacks=[TrainValTensorBoard(write_graph=False)])#[tbCallBack])
+		history = model.fit(X[train], Y[train],  validation_split=0.15, epochs=1000, batch_size=len(X), verbose=0, callbacks=[TrainValTensorBoard(write_graph=False)])#[tbCallBack])
 		# TODO: maybe use validation_split=0.2,
 		# evaluate the model
 		scores = model.evaluate(X[test], Y[test], verbose=0)
@@ -238,10 +266,13 @@ print X_np.shape
 # try_NN_kfold(X_np, Y_np, NN1_model)
 # try_NN_kfold(X_np, Y_np, NN1_model_r2)
 # try_NN_kfold(X_np, Y_np, NN3_model)
-try_NN_kfold(X_np, Y_np, NN3_model_r2)
+#try_NN_kfold(X_np, Y_np, NN3_model_r2)
 #try_NN_kfold(X_np, Y_np, NN1_model_r2_dropout)
+#try_NN_kfold(X_np, Y_np, NN3_model_r2_dropout)
+#try_NN_kfold(X_np, Y_np, NN3_model_MSE_dropout)
 
 
-
-
+#TODO: run again w normalization 
+X_np = normalize(X_np, axis=0)
+try_NN_kfold(X_np, Y_np, NN3_model_MSE_dropout)
 
