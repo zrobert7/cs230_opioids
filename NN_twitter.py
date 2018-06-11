@@ -85,7 +85,7 @@ def data_splitter(X, y, test_size=0.1,verbose=True):
 
 #cite: https://stackoverflow.com/questions/47877475/keras-tensorboard-plot-train-and-validation-scalars-in-a-same-figure
 class TrainValTensorBoard(TensorBoard):
-    def __init__(self, log_dir='./logs/twitter/', **kwargs):
+    def __init__(self, log_dir='./logs/twitter/mae', **kwargs):
         # Make the original `TensorBoard` log to a subdirectory 'training'
         now = time.strftime("%c")
         training_log_dir = os.path.join(log_dir, str(now) +'_training')
@@ -128,7 +128,7 @@ def NN1_model(lr=0.001):
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam()#clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
+	model.compile(loss='mean_absolute_error', optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
 	return model
 
 def NN1_model_r2(lr=0.001):
@@ -162,7 +162,7 @@ def NN3_model(lr=0.001):
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam()#clipvalue=1000, clipnorm=1)
-	model.compile(loss='mean_squared_error', optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
+	model.compile(loss='mean_absolute_error', optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
 	return model
 
 def NN3_model_r2(lr=0.001):
@@ -189,7 +189,7 @@ def NN3_model_r2_dropout(lr=0.001):
 	model.add(Dense(1, kernel_initializer='normal'))
 	# Compile model
 	adam = optimizers.Adam()#clipvalue=1000, clipnorm=1)
-	model.compile(loss=r2_loss, optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
+	model.compile(loss='mean_absolute_error', optimizer=adam, metrics=['mse', 'mae', 'mape', r2], )
 	return model
 
 def NN3_model_MSE_dropout(lr=0.001):
@@ -219,7 +219,7 @@ def try_NN_kfold(X, Y, model_name, lr=0.001):
 	mae_scores = []
 	idx = 0
 	for train, test in kfold.split(X, Y):
-		if idx == 2:
+		if idx == 3:
 			break
 	  # create model
 		# model = Sequential()
@@ -234,7 +234,7 @@ def try_NN_kfold(X, Y, model_name, lr=0.001):
 		model = model_name(lr)
 		now = time.strftime("%c")
 		tbCallBack = keras.callbacks.TensorBoard(log_dir='./logs/'+now, histogram_freq=0, write_graph=True, write_images=True)
-		history = model.fit(X[train], Y[train],  validation_split=0.15, epochs=1000, batch_size=len(X), verbose=0, callbacks=[TrainValTensorBoard(write_graph=False)])#[tbCallBack])
+		history = model.fit(X[train], Y[train],  validation_split=0.15, epochs=800, batch_size=len(X), verbose=0, callbacks=[TrainValTensorBoard(write_graph=False)])#[tbCallBack])
 		# TODO: maybe use validation_split=0.2,
 		# evaluate the model
 		scores = model.evaluate(X[test], Y[test], verbose=0)
@@ -262,17 +262,18 @@ X_np = pd.read_csv('X_embedded_np.csv', sep=' ',header=None).as_matrix()
 # plot_(X_counts, Y_np)
 print X_np.shape
 #print X_np
+X_np = normalize(X_np, axis=0)
 
-# try_NN_kfold(X_np, Y_np, NN1_model)
+try_NN_kfold(X_np, Y_np, NN1_model)
 # try_NN_kfold(X_np, Y_np, NN1_model_r2)
-# try_NN_kfold(X_np, Y_np, NN3_model)
+try_NN_kfold(X_np, Y_np, NN3_model)
 #try_NN_kfold(X_np, Y_np, NN3_model_r2)
-#try_NN_kfold(X_np, Y_np, NN1_model_r2_dropout)
-#try_NN_kfold(X_np, Y_np, NN3_model_r2_dropout)
+# try_NN_kfold(X_np, Y_np, NN1_model_r2_dropout)
+try_NN_kfold(X_np, Y_np, NN3_model_r2_dropout)
 #try_NN_kfold(X_np, Y_np, NN3_model_MSE_dropout)
 
 
 #TODO: run again w normalization 
-X_np = normalize(X_np, axis=0)
-try_NN_kfold(X_np, Y_np, NN3_model_MSE_dropout)
+
+# try_NN_kfold(X_np, Y_np, NN3_model_MSE_dropout)
 
